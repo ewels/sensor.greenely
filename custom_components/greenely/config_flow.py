@@ -48,17 +48,18 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 class Greenelyhub:
     """Class to authenticate with the host."""
 
-    def __init__(self, email: str, password: str):
+    def __init__(self, hass: HomeAssistant, email: str, password: str):
+        self.hass = hass
         self.email = email
         self.password = password
         self.api = GreenelyApi(self.email, self.password)
 
     async def authenticate(self) -> bool:
         """Test if we can authenticate with the host."""
-        return self.api.check_auth()
+        return await self.hass.async_add_executor_job(self.api.check_auth)
 
     async def get_facility_id(self) -> int:
-        return int(self.api.get_facility_id())
+        return int(await self.hass.async_add_executor_job(self.api.get_facility_id))
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
@@ -67,7 +68,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
 
-    hub = Greenelyhub(data[CONF_EMAIL], data[CONF_PASSWORD])
+    hub = Greenelyhub(hass, data[CONF_EMAIL], data[CONF_PASSWORD])
 
     if not await hub.authenticate():
         raise InvalidAuth
@@ -89,10 +90,11 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(
-        config_entry: ConfigFlow,
+        config_entry: ConfigEntry,
     ) -> GreenelyOptionsFlow:
         """Create the options flow."""
         return GreenelyOptionsFlow(config_entry)
+
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -128,7 +130,8 @@ class GreenelyOptionsFlow(OptionsFlow):
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize Greenely options flow."""
-        self.config_entry = config_entry
+        self._config_entry = config_entry
+
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -146,62 +149,63 @@ class GreenelyOptionsFlow(OptionsFlow):
             {
                 vol.Optional(
                     GREENELY_PRICES,
-                    default=self.config_entry.options.get(GREENELY_PRICES, True),
+                    default=self._config_entry.options.get(GREENELY_PRICES, True),
                 ): bool,
                 vol.Optional(
                     GREENELY_DAILY_USAGE,
-                    default=self.config_entry.options.get(GREENELY_DAILY_USAGE, True),
+                    default=self._config_entry.options.get(GREENELY_DAILY_USAGE, True),
                 ): bool,
                 vol.Optional(
                     GREENELY_HOURLY_USAGE,
-                    default=self.config_entry.options.get(GREENELY_HOURLY_USAGE, False),
+                    default=self._config_entry.options.get(GREENELY_HOURLY_USAGE, False),
                 ): bool,
                 vol.Optional(
                     GREENELY_DAILY_PRODUCED_ELECTRICITY,
-                    default=self.config_entry.options.get(
+                    default=self._config_entry.options.get(
                         GREENELY_DAILY_PRODUCED_ELECTRICITY, False
                     ),
                 ): bool,
                 vol.Optional(
                     GREENELY_USAGE_DAYS,
-                    default=self.config_entry.options.get(GREENELY_USAGE_DAYS, 10),
+                    default=self._config_entry.options.get(GREENELY_USAGE_DAYS, 10),
                 ): int,
                 vol.Optional(
                     GREENELY_PRODUCED_ELECTRICITY_DAYS,
-                    default=self.config_entry.options.get(
+                    default=self._config_entry.options.get(
                         GREENELY_PRODUCED_ELECTRICITY_DAYS, 10
                     ),
                 ): int,
                 vol.Optional(
                     GREENELY_DATE_FORMAT,
-                    default=self.config_entry.options.get(
+                    default=self._config_entry.options.get(
                         GREENELY_DATE_FORMAT, "%b %d %Y"
                     ),
                 ): str,
                 vol.Optional(
                     GREENELY_TIME_FORMAT,
-                    default=self.config_entry.options.get(
+                    default=self._config_entry.options.get(
                         GREENELY_TIME_FORMAT, "%H:%M"
                     ),
                 ): str,
                 vol.Optional(
                     GREENELY_HOURLY_OFFSET_DAYS,
-                    default=self.config_entry.options.get(
+                    default=self._config_entry.options.get(
                         GREENELY_HOURLY_OFFSET_DAYS, 1
                     ),
                 ): int,
                 vol.Optional(
                     GREENELY_FACILITY_ID,
-                    default=self.config_entry.options.get(GREENELY_FACILITY_ID),
+                    default=self._config_entry.options.get(GREENELY_FACILITY_ID),
                 ): int,
                 vol.Optional(
                     GREENELY_HOMEKIT_COMPATIBLE,
-                    default=self.config_entry.options.get(
+                    default=self._config_entry.options.get(
                         GREENELY_HOMEKIT_COMPATIBLE, False
                     ),
                 ): bool,
             }
         )
+
 
 class InvalidAuth(HomeAssistantError):
     """Error to indicate there is invalid auth."""
