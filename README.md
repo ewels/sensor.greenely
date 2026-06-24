@@ -42,7 +42,7 @@ key | type | description
 key | type | description
 :--- | :--- | :---
 **Prices (Optional)** | boolean | Creates a sensor showing price data in kr/kWh. Default `true`.
-**Use 15 minute intervals (Optional)** | boolean | When enabled, the price sensor additionally exposes `previous_day_quarterly`, `current_day_quarterly` and `next_day_quarterly` attributes with 15-minute resolution (96 entries per day) derived from the same spot price response, and the sensor state reflects the current 15-minute price instead of the current hour. The hourly attributes are unchanged. Default `false`.
+**15-minute (quarterly) prices (Optional)** | boolean | When enabled, the price sensor additionally exposes `previous_day_quarterly`, `current_day_quarterly` and `next_day_quarterly` attributes with 15-minute resolution (96 entries per day) derived from the same spot price response, and the sensor state reflects the current 15-minute price instead of the current hour. The hourly attributes are unchanged. Default `false`.
 **Daily usage sensor (Optional)** | boolean | Creates a sensor showing daily usage data. The state of this sensor is yesterday's total usage. Default `true`.
 **Hourly usage sensor (Optional)** | boolean | Creates a sensor showing yesterday's hourly usage data. Default `false`.
 **Daily produced electricity sensor (Optional)** | boolean | Creates a sensor showing daily produced electricity data. The state of this sensor is the total value. Default `false`.
