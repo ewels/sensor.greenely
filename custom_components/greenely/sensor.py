@@ -6,6 +6,7 @@ from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo, DeviceEntryType
 from homeassistant.helpers.entity import Entity
+import homeassistant.util.dt as dt_util
 
 from . import GreenelyData
 from .const import (
@@ -17,6 +18,7 @@ from .const import (
     GREENELY_HOURLY_OFFSET_DAYS,
     GREENELY_HOURLY_USAGE,
     GREENELY_PRICES,
+    GREENELY_QUARTERLY_PRICES,
     GREENELY_PRODUCED_ELECTRICITY_DAYS,
     GREENELY_TIME_FORMAT,
     GREENELY_USAGE_DAYS,
@@ -46,6 +48,7 @@ async def async_setup_entry(
     date_format = config_entry.options.get(GREENELY_DATE_FORMAT, "%b %d %Y")
     time_format = config_entry.options.get(GREENELY_TIME_FORMAT, "%H:%M")
     homekit_compatible = config_entry.options.get(GREENELY_HOMEKIT_COMPATIBLE, False)
+    quarterly_prices = config_entry.options.get(GREENELY_QUARTERLY_PRICES, False)
 
     sensors = []
 
@@ -71,6 +74,7 @@ async def async_setup_entry(
                 date_format,
                 time_format,
                 homekit_compatible,
+                quarterly_prices,
             )
         )
 
@@ -304,7 +308,14 @@ class GreenelyHourlyUsageSensor(Entity):
 
 class GreenelyPricesSensor(Entity):
     def __init__(
-        self, name, api, facility_id, date_format, time_format, homekit_compatible
+        self,
+        name,
+        api,
+        facility_id,
+        date_format,
+        time_format,
+        homekit_compatible,
+        show_quarterly=False,
     ):
         self._name = name
         self._icon = "mdi:account-cash"
@@ -314,6 +325,7 @@ class GreenelyPricesSensor(Entity):
         self._date_format = date_format
         self._time_format = time_format
         self._homekit_compatible = homekit_compatible
+        self._show_quarterly = show_quarterly
         self._api = api
         self._facility_id = facility_id
 
@@ -379,6 +391,9 @@ class GreenelyPricesSensor(Entity):
                 todaysData = []
                 tomorrowsData = []
                 yesterdaysData = []
+                todaysQuarterly = []
+                tomorrowsQuarterly = []
+                yesterdaysQuarterly = []
                 for d in spot_price_data["data"]:
                     timestamp = datetime.strptime(
                         spot_price_data["data"][d]["localtime"], "%Y-%m-%d %H:%M"
@@ -386,19 +401,34 @@ class GreenelyPricesSensor(Entity):
                     if timestamp.date() == today.date():
                         if spot_price_data["data"][d]["price"] != None:
                             todaysData.append(self.make_attribute(spot_price_data, d))
+                            todaysQuarterly.extend(
+                                self.make_quarter_attributes(spot_price_data, d)
+                            )
                     elif timestamp.date() == (today.date() + timedelta(days=1)):
                         if spot_price_data["data"][d]["price"] != None:
                             tomorrowsData.append(
                                 self.make_attribute(spot_price_data, d)
+                            )
+                            tomorrowsQuarterly.extend(
+                                self.make_quarter_attributes(spot_price_data, d)
                             )
                     elif timestamp.date() == (today.date() - timedelta(days=1)):
                         if spot_price_data["data"][d]["price"] != None:
                             yesterdaysData.append(
                                 self.make_attribute(spot_price_data, d)
                             )
+                            yesterdaysQuarterly.extend(
+                                self.make_quarter_attributes(spot_price_data, d)
+                            )
                 self._state_attributes["current_day"] = todaysData
                 self._state_attributes["next_day"] = tomorrowsData
                 self._state_attributes["previous_day"] = yesterdaysData
+                if self._show_quarterly:
+                    self._state_attributes["current_day_quarterly"] = todaysQuarterly
+                    self._state_attributes["next_day_quarterly"] = tomorrowsQuarterly
+                    self._state_attributes[
+                        "previous_day_quarterly"
+                    ] = yesterdaysQuarterly
         else:
             _LOGGER.error("Unable to log in!")
 
@@ -420,6 +450,46 @@ class GreenelyPricesSensor(Entity):
             else:
                 newPoint["price"] = 0
             return newPoint
+
+    def make_quarter_attributes(self, response, value):
+        """Build up to four 15-minute price points from an hourly entry.
+
+        The hourly entry exposes a ``quarters_prices`` object whose
+        ``quarter1``..``quarter4`` values are in the same raw unit/scale as the
+        hourly ``price``, so the identical ``format_price`` conversion applies.
+        Quarter times are derived from the hour's ``localtime`` (00:00, 00:15,
+        00:30, 00:45) and the ISO 8601 ``start`` from the hour's unix timestamp
+        key plus 15 minutes per quarter.
+        """
+        if not self._show_quarterly or not response:
+            return []
+        entry = response["data"][value]
+        quarters = entry.get("quarters_prices")
+        if not quarters:
+            return []
+        dt_object = datetime.strptime(entry["localtime"], "%Y-%m-%d %H:%M")
+        now = datetime.now()
+        points = []
+        for index, key in enumerate(
+            ("quarter1", "quarter2", "quarter3", "quarter4")
+        ):
+            price = quarters.get(key)
+            quarter_time = dt_object + timedelta(minutes=15 * index)
+            start = dt_util.as_local(dt_util.utc_from_timestamp(int(value) + 900 * index))
+            point = {
+                "date": quarter_time.strftime(self._date_format),
+                "time": quarter_time.strftime(self._time_format),
+                "start": start.isoformat(),
+                "price": self.format_price(price) if price is not None else 0,
+            }
+            # When quarterly resolution is enabled, the state reflects the live
+            # 15-minute price, i.e. the quarter window covering "now".
+            if price is not None and quarter_time <= now < quarter_time + timedelta(
+                minutes=15
+            ):
+                self._state = point["price"]
+            points.append(point)
+        return points
 
     def format_price(self, price):
         if self._homekit_compatible == True:

@@ -32,6 +32,7 @@
                     "hourly_offset_days": "Timvis förskjutning dagar",
                     "hourly_usage": "Timvis förbrukning sensor",
                     "prices": "Prissensor",
+                    "quarterly_prices": "15-minuters (kvart's) priser",
                     "produced_electricity_days": "Producerad el dagar",
                     "time_format": "Tidsformat",
                     "usage_days": "Förbrukningsdagar"

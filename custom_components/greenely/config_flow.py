@@ -29,6 +29,7 @@ from .const import (
     GREENELY_HOURLY_OFFSET_DAYS,
     GREENELY_HOURLY_USAGE,
     GREENELY_PRICES,
+    GREENELY_QUARTERLY_PRICES,
     GREENELY_PRODUCED_ELECTRICITY_DAYS,
     GREENELY_TIME_FORMAT,
     GREENELY_USAGE_DAYS,
@@ -150,6 +151,12 @@ class GreenelyOptionsFlow(OptionsFlow):
                 vol.Optional(
                     GREENELY_PRICES,
                     default=self._config_entry.options.get(GREENELY_PRICES, True),
+                ): bool,
+                vol.Optional(
+                    GREENELY_QUARTERLY_PRICES,
+                    default=self._config_entry.options.get(
+                        GREENELY_QUARTERLY_PRICES, False
+                    ),
                 ): bool,
                 vol.Optional(
                     GREENELY_DAILY_USAGE,

@@ -32,6 +32,7 @@
                     "hourly_offset_days": "Hourly offset days",
                     "hourly_usage": "Hourly usage sensor",
                     "prices": "Price sensor",
+                    "quarterly_prices": "15-minute (quarterly) prices",
                     "produced_electricity_days": "Produced electricity days",
                     "time_format": "Time format",
                     "usage_days": "Usage days"

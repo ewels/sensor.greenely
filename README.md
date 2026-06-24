@@ -42,6 +42,7 @@ key | type | description
 key | type | description
 :--- | :--- | :---
 **Prices (Optional)** | boolean | Creates a sensor showing price data in kr/kWh. Default `true`.
+**15-minute (quarterly) prices (Optional)** | boolean | When enabled, the price sensor additionally exposes `previous_day_quarterly`, `current_day_quarterly` and `next_day_quarterly` attributes with 15-minute resolution (96 entries per day) derived from the same spot price response, and the sensor state reflects the current 15-minute price instead of the current hour. The hourly attributes are unchanged. Default `false`.
 **Daily usage sensor (Optional)** | boolean | Creates a sensor showing daily usage data. The state of this sensor is yesterday's total usage. Default `true`.
 **Hourly usage sensor (Optional)** | boolean | Creates a sensor showing yesterday's hourly usage data. Default `false`.
 **Daily produced electricity sensor (Optional)** | boolean | Creates a sensor showing daily produced electricity data. The state of this sensor is the total value. Default `false`.
@@ -221,6 +222,10 @@ Add this to your configuration.yaml to debug the component
 **previous_day, current_day, next_day & current_month**
 ```json
 [{ "date": "Jan 18 2020", "time": "13:00", "price": "24.75" }]
+```
+**previous_day_quarterly, current_day_quarterly & next_day_quarterly** (only when 15-minute prices are enabled)
+```json
+[{ "date": "Dec 09 2025", "time": "00:15", "start": "2025-12-09T00:15:00+01:00", "price": 0.6721 }]
 ```
 **days**
 ```json

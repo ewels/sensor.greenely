@@ -26,6 +26,7 @@
         "title": "Manage Sensors",
         "data": {
           "prices": "Price sensor",
+          "quarterly_prices": "15-minute (quarterly) prices",
           "daily_usage": "Daily usage sensor",
           "hourly_usage": "Hourly usage sensor",
           "daily_produced_electricity": "Daily produced electricity sensor",
