@@ -1,4 +1,13 @@
 # sensor.greenely
+
+> [!IMPORTANT]
+> This is a fork of [`linsvensson/sensor.greenely`](https://github.com/linsvensson/sensor.greenely).
+>
+> It adds **opt-in 15-minute (quarterly) price resolution**. When enabled, the price sensor additionally exposes `previous_day_quarterly`, `current_day_quarterly` and `next_day_quarterly` attributes with 15-minute resolution (96 entries per day), and the sensor state reflects the current 15-minute price instead of the current hour. The existing hourly attributes are unchanged. See the [Options variables](#options-variables) section for details.
+
+<details>
+<summary>Original README</summary>
+
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/linsvensson/sensor.greenely?color=pink&style=for-the-badge)
 ![GitHub last commit](https://img.shields.io/github/last-commit/linsvensson/sensor.greenely?color=pink&style=for-the-badge)    
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?color=pink&style=for-the-badge)](https://github.com/hacs/integration)
@@ -239,3 +248,5 @@ Add this to your configuration.yaml to debug the component
 ```json
 [{ "date": "Jan 12 2020", "usage": "11.0", "is_complete": true }]
 ```
+
+</details>
